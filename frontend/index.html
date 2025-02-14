@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dating Coach AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src='https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js'></script>
+    <style>
+        :root {
+            --primary-color: #ff4b6e;
+            --secondary-color: #6c63ff;
+            --background-color: #f5f5f5;
+            --text-color: #333;
+            --container-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .chat-container {
+            background: var(--container-bg);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        #emailInput {
+            width: 100%;
+            height: 150px;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        #emailInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(255,75,110,0.1);
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        #submitButton {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s ease;
+        }
+
+        #submitButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,75,110,0.3);
+        }
+
+        #submitButton:active {
+            transform: translateY(0);
+        }
+
+        #submitButton:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #loadingIndicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        #errorContainer {
+            background-color: #fff3f3;
+            color: #d63031;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            animation: shake 0.5s ease;
+        }
+
+        #resultContainer {
+            background: var(--container-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        #resultContainer h2 {
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        #jsonResult {
+            line-height: 1.8;
+            color: #2d3436;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Response styling */
+        .response-section {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-left: 4px solid var(--secondary-color);
+            background: #f8f9fa;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .suggestion {
+            background: #fff;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .suggestion:hover {
+            transform: translateX(5px);
+        }
+
+        /* Dark mode toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--container-bg);
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Dark mode styles */
+        [data-theme="dark"] {
+            --background-color: #1a1a1a;
+            --container-bg: #2d2d2d;
+            --text-color: #ffffff;
+        }
+
+        [data-theme="dark"] .suggestion {
+            background: #3d3d3d;
+        }
+
+        /* Add these new styles */
+        .upload-container {
+            margin-top: 1rem;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--primary-color);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 75, 110, 0.05);
+        }
+
+        .upload-area:hover {
+            background: rgba(255, 75, 110, 0.1);
+        }
+
+        .upload-area.dragover {
+            background: rgba(255, 75, 110, 0.15);
+            border-style: solid;
+        }
+
+        .upload-content {
+            color: var(--primary-color);
+        }
+
+        .upload-content i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .image-preview-container {
+            margin-top: 1rem;
+        }
+
+        .image-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .image-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .image-item .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+        }
+
+        .ocr-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+        }
+
+        .ocr-progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .processing-content {
+            background: var(--container-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="container">
+        <div class="header">
+            <h1>Dating Coach AI</h1>
+            <p>Get expert advice for your dating conversations</p>
+        </div>
+
+        <div class="chat-container">
+            <textarea 
+                id="emailInput" 
+                placeholder="Paste your conversation here...&#10;&#10;Example:&#10;Her: Hey, what's up?&#10;Me: Not much, just finished work. How about you?"
+            ></textarea>
+            
+            <div class="upload-container">
+                <div class="upload-area" id="dropZone">
+                    <input type="file" id="imageInput" accept="image/*" multiple class="hidden">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag & drop screenshots here or click to upload</p>
+                    </div>
+                </div>
+                <div id="imagePreviewContainer" class="image-preview-container hidden">
+                    <h3>Uploaded Screenshots</h3>
+                    <div id="imageList" class="image-list"></div>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <button id="submitButton">
+                    <i class="fas fa-magic"></i>
+                    Get Dating Advice
+                </button>
+            </div>
+
+            <div id="loadingIndicator" class="hidden">
+                <div class="spinner"></div>
+                Analyzing your conversation...
+            </div>
+        </div>
+
+        <div id="errorContainer" class="hidden">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="errorText"></span>
+        </div>
+
+        <div id="resultContainer" class="hidden">
+            <h2><i class="fas fa-heart"></i> Analysis Results</h2>
+            <div id="jsonResult"></div>
+        </div>
+    </div>
+
+    <script src="/js/script.js" type="module"></script>
+</body>
+</html>
