@@ -316,24 +316,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatResponse(response) {
-        const sections = response.split('\n\n');
+        // Remove stars and clean up the text
+        const cleanText = response.replace(/\*\*/g, '');
+        
+        const sections = cleanText.split('\n\n');
         return sections.map(section => {
-            if (section.trim().startsWith('1.')) {
-                return `<div class="response-section">
-                    <h3>💭 Conversation Analysis</h3>
-                    <p>${section.replace('1.', '').trim()}</p>
+            if (section.includes('1. Conversation')) {
+                return `<div class="response-section analysis">
+                    <h3><i class="fas fa-comments"></i> Conversation Analysis</h3>
+                    <p>${section.replace('1. Conversation Dynamics Assessment:', '').trim()}</p>
                 </div>`;
-            } else if (section.trim().startsWith('2.')) {
-                return `<div class="response-section">
-                    <h3>💬 Suggested Responses</h3>
-                    ${section.split('\n').slice(1).map(suggestion => 
-                        `<div class="suggestion">${suggestion.trim()}</div>`
-                    ).join('')}
-                </div>`;
-            } else if (section.trim().startsWith('3.')) {
-                return `<div class="response-section">
-                    <h3>💡 Dating Tips</h3>
-                    <p>${section.replace('3.', '').trim()}</p>
+            } else if (section.includes('2. Two Options')) {
+                const options = section.split('Option');
+                return `<div class="response-section suggestions">
+                    <h3><i class="fas fa-reply"></i> Suggested Responses</h3>
+                    <div class="suggestions-grid">
+                        ${options.slice(1).map(option => {
+                            const [label, text] = option.split(':');
+                            if (text) {
+                                return `<div class="suggestion-card">
+                                    <div class="suggestion-label">Option ${label.trim()}</div>
+                                    <p>${text.trim()}</p>
+                                </div>`;
+                            }
+                            return '';
+                        }).join('')}
+                    </div>
                 </div>`;
             }
             return `<div class="response-section">${section}</div>`;
