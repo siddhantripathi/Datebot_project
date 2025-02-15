@@ -89,17 +89,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         const g = data[i + 1];
                         const b = data[i + 2];
                         
-                        // Detect blue message bubbles (more precise detection)
-                        if (b > 200 && g > 200 && r < 100) {
-                            // Invert colors for blue bubbles
-                            data[i] = 0;       // R
-                            data[i + 1] = 0;   // G
-                            data[i + 2] = 0;   // B
-                            data[i + 3] = 255; // A
+                        // Detect message bubbles by color patterns
+                        if (
+                            // Blue bubble (light text)
+                            (b > 200 && g > 200 && r < 100) ||
+                            // Light blue bubble
+                            (b > 180 && g > 180 && r > 180) ||
+                            // Yellow bubble with dark text
+                            (r > 200 && g > 200 && b < 100) ||
+                            // Green bubble
+                            (r < 100 && g > 180 && b < 100) ||
+                            // Gray bubble
+                            (Math.abs(r - g) < 10 && Math.abs(g - b) < 10 && r > 200)
+                        ) {
+                            // Convert bubble backgrounds to white and text to black
+                            const brightness = (r + g + b) / 3;
+                            if (brightness > 160) { // Background
+                                data[i] = data[i + 1] = data[i + 2] = 255; // White
+                            } else { // Text
+                                data[i] = data[i + 1] = data[i + 2] = 0; // Black
+                            }
                         } else {
                             // High contrast for other areas
                             const brightness = (r + g + b) / 3;
-                            const threshold = 200;
+                            const threshold = 180;
                             
                             if (brightness > threshold) {
                                 data[i] = data[i + 1] = data[i + 2] = 255;
@@ -115,13 +128,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Scale up the image
                     const scaledCanvas = document.createElement('canvas');
                     const scaledCtx = scaledCanvas.getContext('2d');
-                    const scale = 2; // Double the size
+                    const scale = 2.5; // Increased scale factor
                     scaledCanvas.width = canvas.width * scale;
                     scaledCanvas.height = canvas.height * scale;
                     
                     // Use better scaling algorithm
                     scaledCtx.imageSmoothingEnabled = false;
                     scaledCtx.drawImage(canvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+
+                    // Apply sharpening
+                    const sharpenedData = scaledCtx.getImageData(0, 0, scaledCanvas.width, scaledCanvas.height);
+                    const sharpenKernel = [
+                        0, -1, 0,
+                        -1, 5, -1,
+                        0, -1, 0
+                    ];
+                    applyKernel(sharpenedData, sharpenKernel);
+                    scaledCtx.putImageData(sharpenedData, 0, 0);
                     
                     // Convert to data URL with maximum quality
                     resolve(scaledCanvas.toDataURL('image/png', 1.0));
@@ -130,6 +153,30 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             reader.readAsDataURL(file);
         });
+    }
+
+    // Helper function to apply kernel (for sharpening)
+    function applyKernel(imageData, kernel) {
+        const data = imageData.data;
+        const width = imageData.width;
+        const height = imageData.height;
+        const tempData = new Uint8ClampedArray(data);
+
+        for (let y = 1; y < height - 1; y++) {
+            for (let x = 1; x < width - 1; x++) {
+                const idx = (y * width + x) * 4;
+                for (let c = 0; c < 3; c++) {
+                    let val = 0;
+                    for (let ky = -1; ky <= 1; ky++) {
+                        for (let kx = -1; kx <= 1; kx++) {
+                            const kidx = ((y + ky) * width + (x + kx)) * 4;
+                            val += tempData[kidx + c] * kernel[(ky + 1) * 3 + (kx + 1)];
+                        }
+                    }
+                    data[idx + c] = val;
+                }
+            }
+        }
     }
 
     async function handleFiles(files) {
@@ -170,8 +217,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const processedImageData = await preprocessImage(file);
                 const result = await worker.recognize(processedImageData, {
                     lang: 'eng',
-                    tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!? \'"-',
-                    tessedit_pageseg_mode: '6'
+                    tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?\'"-:;()[]{}@#$%^&*+=<>/ ',
+                    tessedit_pageseg_mode: '6',
+                    tessedit_ocr_engine_mode: '2', // Use LSTM only
+                    preserve_interword_spaces: '1',
+                    textord_heavy_nr: '1',
+                    textord_min_linesize: '2.5'
                 });
 
                 progressBar.style.width = '100%';
