@@ -7,14 +7,12 @@ from flask_cors import CORS
 load_dotenv()
 
 app = Flask(__name__)
-# Update CORS to allow specific origin
 CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://localhost:8000",
             "http://127.0.0.1:8000",
-            "https://*.vercel.app",
-            "https://*.your-domain.com"
+            "https://*.vercel.app"
         ],
         "methods": ["POST", "OPTIONS"]
     }
