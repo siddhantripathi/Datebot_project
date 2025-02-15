@@ -12,6 +12,7 @@ CORS(app, resources={
         "origins": [
             "http://localhost:8000",
             "http://127.0.0.1:8000",
+            "https://datebot-project.vercel.app",
             "https://*.vercel.app"
         ],
         "methods": ["POST", "OPTIONS"]

@@ -15,6 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let uploadedImages = new Map();
     let worker = null;
 
+    // Add API URL configuration
+    const API_URL = process.env.NODE_ENV === 'production' 
+        ? 'https://datebot-project.vercel.app/api'  // Replace with your Vercel domain
+        : 'http://localhost:5000/api';
+
     // Initialize Tesseract
     initTesseract();
 
@@ -283,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearResults();
 
         try {
-            const response = await fetch('http://localhost:5000/api/parse', {
+            const response = await fetch(`${API_URL}/parse`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -297,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showResult(data);
         } catch (error) {
             console.error('API Error:', error);
-            showError(error.message);
+            showError(error.message || 'Failed to connect to the server');
         } finally {
             toggleLoading(false);
         }
