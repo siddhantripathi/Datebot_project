@@ -1,15 +1,48 @@
 {
     "version": 2,
     "builds": [
-        { "src": "backend/app.py", "use": "@vercel/python" },
-        { "src": "frontend/**/*", "use": "@vercel/static" }
+        {
+            "src": "backend/app.py",
+            "use": "@vercel/python",
+            "config": {
+                "maxLambdaSize": "15mb",
+                "runtime": "python3.9"
+            }
+        },
+        {
+            "src": "frontend/**/*",
+            "use": "@vercel/static",
+            "config": {
+                "zeroConfig": true
+            }
+        }
     ],
     "routes": [
-        { "src": "/api/(.*)", "dest": "backend/app.py" },
-        { "src": "/(js|css)/(.*)", "dest": "frontend/$1/$2" },
-        { "src": "/(.*)", "dest": "frontend/index.html" }
+        {
+            "src": "/api/(.*)",
+            "dest": "backend/app.py"
+        },
+        {
+            "src": "/(js|css)/(.*)",
+            "dest": "frontend/$1/$2"
+        },
+        {
+            "src": "/assets/(.*)",
+            "dest": "frontend/assets/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "frontend/index.html"
+        }
     ],
     "env": {
-        "PYTHON_VERSION": "3.9"
+        "PYTHON_VERSION": "3.9",
+        "GEMINI_API_KEY": "@gemini_api_key"
+    },
+    "functions": {
+        "backend/app.py": {
+            "memory": 1024,
+            "maxDuration": 10
+        }
     }
 }
