@@ -15,10 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let uploadedImages = new Map();
     let worker = null;
 
-    // Add API URL configuration
-    const API_URL = process.env.NODE_ENV === 'production' 
-        ? 'https://datebot-project.vercel.app/api'  // Replace with your Vercel domain
-        : 'http://localhost:5000/api';
+    // Add API URL configuration - using window.location to determine environment
+    const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000/api'
+        : 'https://datebot-project.vercel.app/api';  // Replace with your Vercel domain
 
     // Initialize Tesseract
     initTesseract();
