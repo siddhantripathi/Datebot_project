@@ -38,7 +38,6 @@
         }
     ],
     "env": {
-        "PYTHON_VERSION": "3.9",
-        "GEMINI_API_KEY": "@gemini_api_key"
+        "PYTHON_VERSION": "3.9"
     }
 }
